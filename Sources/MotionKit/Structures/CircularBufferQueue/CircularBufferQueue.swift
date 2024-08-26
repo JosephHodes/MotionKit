@@ -1,17 +1,20 @@
 import Foundation
 
+@available(iOS 13.0, *)
 public struct CircularBufferQueue<T>: UpdatableQueue, ConvertibleToArray {
     public typealias Element = T
     
-    private var array: [T?]
-    private var head: Int = 0
-    private var tail: Int = 0
-    private var size: Int = 0
+    public var array: [T?]
+    public var head: Int = 0
+    public var tail: Int = 0
+    public var size: Int = 0
     public let capacity: Int
+    public var is_full: Bool
     
     public init(_ capacity: Int) {
         self.capacity = capacity
-        self.array = Array(repeating: nil, count: capacity)
+        self.is_full = false
+        self.array = capacity > 0 ? Array(repeating: nil, count: capacity) : []
     }
     
     public mutating func enqueue(_ element: T) {
@@ -19,10 +22,14 @@ public struct CircularBufferQueue<T>: UpdatableQueue, ConvertibleToArray {
             array[tail] = element
             tail = (tail + 1) % capacity
             head = (head + 1) % capacity
+            self.is_full = true
         } else {
             array[tail] = element
             tail = (tail + 1) % capacity
             size += 1
+            if size == capacity {
+                self.is_full = true
+            }
         }
     }
     
@@ -35,6 +42,9 @@ public struct CircularBufferQueue<T>: UpdatableQueue, ConvertibleToArray {
         array[head] = nil
         head = (head + 1) % capacity
         size -= 1
+        if is_full {
+            is_full = false
+        }
         return element
     }
     
@@ -43,7 +53,7 @@ public struct CircularBufferQueue<T>: UpdatableQueue, ConvertibleToArray {
     }
     
     public func isFull() -> Bool {
-        return size == capacity
+        return self.is_full
     }
     
     public func isEmpty() -> Bool {

@@ -25,5 +25,6 @@ public protocol UpdatableQueue: Queue {
 
 public protocol ConvertibleToArray {
     associatedtype Element
-    mutating func toArray() -> [Element]
+    @available(iOS 13.0.0, *)
+    mutating func toArray() async -> [Element]
 }
