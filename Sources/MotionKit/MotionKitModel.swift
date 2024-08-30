@@ -1,30 +1,46 @@
 import Foundation
-
-
+import CoreMotion
 
 public struct SensorData {
-    public var x: Double
-    public var y: Double
-    public var z: Double
+    public var x: Double = 0.0
+    public var y: Double = 0.0
+    public var z: Double = 0.0
+    public var xTheta: Double = 0.0
+    public var yTheta: Double = 0.0
+    public var zTheta: Double = 0.0
+    public var xField: Double = 0.0
+    public var yField: Double = 0.0
+    public var zField: Double = 0.0
     
-    public init(x: Double = 0, y: Double = 0, z: Double = 0) {
-        self.x = x
-        self.y = y
-        self.z = z
-    }
+    public init() {}  // Added public initializer
 }
 
 public struct Motion {
-    public var accelerometer: SensorData
-    public var gyroscope: SensorData
+    public var data: SensorData? = nil
     
-    public init(accelerometer: SensorData = SensorData(), gyroscope: SensorData = SensorData()) {
-        self.accelerometer = accelerometer
-        self.gyroscope = gyroscope
+    public init() {}  // Added public initializer
+    
+    public mutating func updateAccelerometerData(x: Double, y: Double, z: Double) {
+        if data == nil { data = SensorData() }
+        data?.x = x
+        data?.y = y
+        data?.z = z
+    }
+    
+    public mutating func updateGyroData(xTheta: Double, yTheta: Double, zTheta: Double) {
+        if data == nil { data = SensorData() }
+        data?.xTheta = xTheta
+        data?.yTheta = yTheta
+        data?.zTheta = zTheta
+    }
+    
+    public mutating func updateMagnetometerData(xField: Double, yField: Double, zField: Double) {
+        if data == nil { data = SensorData() }
+        data?.xField = xField
+        data?.yField = yField
+        data?.zField = zField
     }
 }
-
-
 @available(iOS 13.0.0, *)
 public struct Motions {
     public var motions: [CircularBufferQueue<Motion>]  // Array of CircularBufferQueue<Motion>
@@ -38,45 +54,4 @@ public struct Motions {
 // Protocol for delegate to handle changes
 public protocol MotionsManagerServiceDelegate: AnyObject {
     func didUpdateMotions()
-}
-
-@available(iOS 13.0.0, *)
-public class MotionsManagerService {
-    private var cachedMotions: [Motions]
-    private let queueCount: Int
-    private let capacity: Int
-    public weak var delegate: MotionsManagerServiceDelegate?
-    
-    public init(queueCount: Int, capacity: Int) {
-        self.queueCount = queueCount
-        self.capacity = capacity
-        self.cachedMotions = []
-    }
-    
-    // Record current motion data
-    public func recordMotion(_ motion: Motion) {
-        if cachedMotions.isEmpty {
-            cachedMotions.append(Motions(queueCount: queueCount, capacity: capacity))
-        }
-        
-        // Enqueue the motion into the first non-full queue
-        for i in 0..<cachedMotions[cachedMotions.count - 1].motions.count {
-            if !cachedMotions[cachedMotions.count - 1].motions[i].isFull() {
-                cachedMotions[cachedMotions.count - 1].motions[i].enqueue(motion)
-                delegate?.didUpdateMotions()
-                return
-            }
-        }
-        
-        // If all queues are full, create a new Motions object
-        let newMotions = Motions(queueCount: queueCount, capacity: capacity)
-        cachedMotions.append(newMotions)
-        cachedMotions[cachedMotions.count - 1].motions[0].enqueue(motion) // Start with the first queue
-        delegate?.didUpdateMotions()
-    }
-    
-    // Access cached motions
-    public func getCachedMotions() -> [Motions] {
-        return cachedMotions
-    }
 }
